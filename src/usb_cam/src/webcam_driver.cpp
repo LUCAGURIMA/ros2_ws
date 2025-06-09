@@ -1,43 +1,45 @@
-#include "../include/usb_cam/webcam_driver.hpp"
+#include "usb_cam/webcam_driver.hpp"
 
 using namespace std::chrono_literals;
 
 WebcamDriver::WebcamDriver() : Node("webcam_driver")
 {
-  // Abre a webcam com backend V4L2
-  cap_.open(2, cv::CAP_V4L2);
+  // Parâmetros
+  this->declare_parameter("video_device", "/dev/video2");
+  this->declare_parameter("frame_width", 1920);
+  this->declare_parameter("frame_height", 1080);
+  this->declare_parameter("fps", 30);
+  
+  std::string video_device = this->get_parameter("video_device").as_string();
+  int frame_width = this->get_parameter("frame_width").as_int();
+  int frame_height = this->get_parameter("frame_height").as_int();
+  int fps = this->get_parameter("fps").as_int();
+
+  // Abre a webcam
+  cap_.open(video_device, cv::CAP_V4L2);
   
   if (!cap_.isOpened()) {
-    RCLCPP_ERROR(get_logger(), "Failed to open webcam!");
+    RCLCPP_ERROR(get_logger(), "Failed to open webcam at %s", video_device.c_str());
     throw std::runtime_error("Webcam open failed");
   }
-  // Após abrir a câmera, adicione:
-  cap_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));  // Tente MJPG primeiro
-  // Configurações de resolução e FPS
-  cap_.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
-  cap_.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
-  cap_.set(cv::CAP_PROP_FPS, 30);
-
-  // Cria publisher diretamente sem ImageTransport
-  image_pub_ = image_transport::create_publisher(this, "image_raw");
   
-  // Timer para captura (30 FPS)
+  // Configurações
+  cap_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+  cap_.set(cv::CAP_PROP_FRAME_WIDTH, frame_width);
+  cap_.set(cv::CAP_PROP_FRAME_HEIGHT, frame_height);
+  cap_.set(cv::CAP_PROP_FPS, fps);
+
+  // Publicadores
+  image_pub_ = image_transport::create_publisher(this, "/usb_cam/image_raw");
+  camera_info_pub_ = this->create_publisher<sensor_msgs::msg::CameraInfo>("/usb_cam/camera_info", 10);
+  
+  // Timer para captura
+  int interval_ms = 1000 / fps;
   timer_ = create_wall_timer(
-    33ms,
+    std::chrono::milliseconds(interval_ms),
     std::bind(&WebcamDriver::capture_frame, this));
     
-  RCLCPP_INFO(get_logger(), "Webcam driver started");
-  // Exibe configurações atuais
-  RCLCPP_INFO(get_logger(), "Configurações atuais:");
-  RCLCPP_INFO(get_logger(), "  Resolução: %dx%d", 
-              static_cast<int>(cap_.get(cv::CAP_PROP_FRAME_WIDTH)),
-              static_cast<int>(cap_.get(cv::CAP_PROP_FRAME_HEIGHT)));
-  RCLCPP_INFO(get_logger(), "  FPS: %.2f", cap_.get(cv::CAP_PROP_FPS));
-  RCLCPP_INFO(get_logger(), "  Brilho: %.2f", cap_.get(cv::CAP_PROP_BRIGHTNESS));
-  RCLCPP_INFO(get_logger(), "  Contraste: %.2f", cap_.get(cv::CAP_PROP_CONTRAST));
-  RCLCPP_INFO(get_logger(), "  Saturação: %.2f", cap_.get(cv::CAP_PROP_SATURATION));
-  RCLCPP_INFO(get_logger(), "  Matiz (Hue): %.2f", cap_.get(cv::CAP_PROP_HUE));
-
+  RCLCPP_INFO(get_logger(), "Webcam driver started on %s", video_device.c_str());
 }
 
 void WebcamDriver::capture_frame()
@@ -51,21 +53,44 @@ void WebcamDriver::capture_frame()
   }
 
   // Converte para mensagem ROS
-  auto msg = cv_bridge::CvImage(
+  auto image_msg = cv_bridge::CvImage(
     std_msgs::msg::Header(),
     "bgr8",
     frame
   ).toImageMsg();
 
-  msg->header.stamp = now();
-  msg->header.frame_id = "camera_frame";
+  rclcpp::Time stamp = now();
+  image_msg->header.stamp = stamp;
+  image_msg->header.frame_id = "camera_frame";
   
-  image_pub_.publish(msg);
+  // Informações da câmera
+  auto camera_info_msg = sensor_msgs::msg::CameraInfo();
+  camera_info_msg.header.stamp = stamp;
+  camera_info_msg.header.frame_id = "camera_frame";
+  camera_info_msg.width = frame.cols;
+  camera_info_msg.height = frame.rows;
+  
+  // Matriz de calibração (ajustar conforme calibração real)
+  camera_info_msg.k = {
+    static_cast<double>(frame.cols), 0.0, static_cast<double>(frame.cols/2),
+    0.0, static_cast<double>(frame.cols), static_cast<double>(frame.rows/2),
+    0.0, 0.0, 1.0
+  };
+  
+  // Modelo de distorção (plano)
+  camera_info_msg.distortion_model = "plumb_bob";
+  camera_info_msg.d = {0.0, 0.0, 0.0, 0.0, 0.0};
+  
+  // Publicar
+  camera_info_pub_->publish(camera_info_msg);
+  image_pub_.publish(image_msg);
+  
+  RCLCPP_DEBUG(get_logger(), "Frame publicado: %dx%d", frame.cols, frame.rows);
 }
 
 int main(int argc, char * argv[])
 {
-  rclcpp::init(argc, argv);
+  rclcpp::init(argc, argv); // CORREÇÃO: rclcpp em vez de rclpy
   rclcpp::spin(std::make_shared<WebcamDriver>());
   rclcpp::shutdown();
   return 0;

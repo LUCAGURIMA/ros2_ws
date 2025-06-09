@@ -12,6 +12,9 @@ find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(camera_info_manager REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 # Configuração de includes
 include_directories(
@@ -24,13 +27,15 @@ add_executable(webcam_driver
   src/webcam_driver.cpp
 )
 
-# Linkagem
+# Linkagem CORRIGIDA
 target_link_libraries(webcam_driver
   ${rclcpp_LIBRARIES}
   ${sensor_msgs_LIBRARIES}
   ${cv_bridge_LIBRARIES}
   ${image_transport_LIBRARIES}
   ${OpenCV_LIBS}
+  ${camera_info_manager_LIBRARIES}  # Usando variável de biblioteca
+  yaml-cpp
 )
 
 # Instalação
@@ -54,6 +59,8 @@ ament_export_dependencies(
   sensor_msgs
   cv_bridge
   image_transport
+  camera_info_manager
+  yaml-cpp
 )
 
 ament_package()
