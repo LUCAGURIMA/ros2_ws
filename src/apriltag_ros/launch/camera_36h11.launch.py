@@ -11,7 +11,7 @@ def generate_launch_description():
         composable_node_descriptions=[
             ComposableNode(
                 package='usb_cam',
-                plugin='WebcamDriver',
+                plugin='usb_cam::WebcamDriver',  # Nome completo necessário)
                 name='usb_cam',
                 namespace='camera',
                 parameters=[{
