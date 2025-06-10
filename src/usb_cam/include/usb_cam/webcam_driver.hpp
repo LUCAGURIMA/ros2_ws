@@ -11,7 +11,7 @@
 class WebcamDriver : public rclcpp::Node
 {
 public:
-  WebcamDriver();
+  explicit WebcamDriver(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 private:
   void capture_frame();

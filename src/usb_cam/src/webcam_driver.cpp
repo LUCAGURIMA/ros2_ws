@@ -2,7 +2,8 @@
 
 using namespace std::chrono_literals;
 
-WebcamDriver::WebcamDriver() : Node("webcam_driver")
+WebcamDriver::WebcamDriver(const rclcpp::NodeOptions & options)
+: Node("webcam_driver", options)
 {
   // Parâmetros
   this->declare_parameter("video_device", "/dev/video2");
@@ -30,8 +31,8 @@ WebcamDriver::WebcamDriver() : Node("webcam_driver")
   cap_.set(cv::CAP_PROP_FPS, fps);
 
   // Publicadores
-  image_pub_ = image_transport::create_publisher(this, "/usb_cam/image_raw");
-  camera_info_pub_ = this->create_publisher<sensor_msgs::msg::CameraInfo>("/usb_cam/camera_info", 10);
+  image_pub_ = image_transport::create_publisher(this, "image_raw");
+  camera_info_pub_ = this->create_publisher<sensor_msgs::msg::CameraInfo>("camera_info", 10);
   
   // Timer para captura
   int interval_ms = 1000 / fps;
@@ -88,10 +89,5 @@ void WebcamDriver::capture_frame()
   RCLCPP_DEBUG(get_logger(), "Frame publicado: %dx%d", frame.cols, frame.rows);
 }
 
-int main(int argc, char * argv[])
-{
-  rclcpp::init(argc, argv); // CORREÇÃO: rclcpp em vez de rclpy
-  rclcpp::spin(std::make_shared<WebcamDriver>());
-  rclcpp::shutdown();
-  return 0;
-}
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(WebcamDriver)

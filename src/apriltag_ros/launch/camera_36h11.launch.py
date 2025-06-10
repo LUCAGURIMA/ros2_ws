@@ -11,7 +11,7 @@ def generate_launch_description():
         composable_node_descriptions=[
             ComposableNode(
                 package='usb_cam',
-                plugin='usb_cam::WebcamDriver',  # Nome completo necessário)
+                plugin='WebcamDriver',
                 name='usb_cam',
                 namespace='camera',
                 parameters=[{
@@ -38,9 +38,9 @@ def generate_launch_description():
                 plugin='AprilTagNode',
                 name='apriltag',
                 namespace='apriltag',
-                remappings=[
-                    ('/apriltag/image_rect', '/camera/image_rect'),
-                    ('/camera/camera_info', '/camera/camera_info')
+               remappings=[
+                    ('image_rect', '/camera/image_rect'),
+                    ('camera_info', '/camera/camera_info')
                 ],
                 parameters=[{
                     'camera_info_url': '',

@@ -13,6 +13,11 @@ def generate_launch_description():
                 'frame_width': 1920,
                 'frame_height': 1080,
                 'fps': 30
-            }]
+            }],
+            remappings=[
+            ('image_raw', '/camera/image_raw'),
+            ('camera_info', '/camera/camera_info')
+            ]
         )
     ])
+    
