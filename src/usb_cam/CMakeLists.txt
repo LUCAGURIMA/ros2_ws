@@ -12,23 +12,27 @@ find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(camera_info_manager REQUIRED)
-find_package(ament_index_cpp REQUIRED)
+find_package(class_loader REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 include_directories(
   include
   ${OpenCV_INCLUDE_DIRS}
-  ${rclcpp_INCLUDE_DIRS}
-  ${sensor_msgs_INCLUDE_DIRS}
-  ${cv_bridge_INCLUDE_DIRS}
-  ${image_transport_INCLUDE_DIRS}
-  ${camera_info_manager_INCLUDE_DIRS}
-  ${ament_index_cpp_INCLUDE_DIRS}
-  ${yaml-cpp_INCLUDE_DIRS}
 )
 
 add_library(webcam_driver SHARED
   src/webcam_driver.cpp
+)
+ament_target_dependencies(webcam_driver
+  rclcpp
+  rclcpp_components
+  sensor_msgs
+  cv_bridge
+  image_transport
+  camera_info_manager
+  class_loader
+  yaml-cpp
+  OpenCV
 )
 target_link_libraries(webcam_driver
   ${OpenCV_LIBS}
@@ -43,6 +47,28 @@ install(TARGETS webcam_driver
   RUNTIME DESTINATION bin
 )
 
+add_executable(webcam_driver_node src/webcam_driver_main.cpp)
+ament_target_dependencies(webcam_driver_node
+  rclcpp
+  rclcpp_components
+  sensor_msgs
+  cv_bridge
+  image_transport
+  camera_info_manager
+  class_loader
+  yaml-cpp
+  OpenCV
+)
+target_link_libraries(webcam_driver_node
+  webcam_driver
+  ${OpenCV_LIBS}
+  yaml-cpp
+)
+
+install(TARGETS webcam_driver_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(DIRECTORY 
   launch 
   DESTINATION share/${PROJECT_NAME}
@@ -55,11 +81,14 @@ install(DIRECTORY
 
 ament_export_dependencies(
   rclcpp
+  rclcpp_components
   sensor_msgs
   cv_bridge
   image_transport
   camera_info_manager
+  class_loader
   yaml-cpp
+  OpenCV
 )
 
 ament_package()

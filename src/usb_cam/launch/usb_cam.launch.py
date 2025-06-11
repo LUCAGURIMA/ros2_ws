@@ -5,8 +5,9 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='usb_cam',
-            executable='webcam_driver',
-            name='usb_cam',
+            executable='webcam_driver_node',
+            name='camera',
+            namespace='camera',  # <-- Adicione esta linha!
             output='screen',
             parameters=[{
                 'video_device': '/dev/video2',
@@ -15,9 +16,7 @@ def generate_launch_description():
                 'fps': 30
             }],
             remappings=[
-            ('image_raw', '/camera/image_raw'),
-            ('camera_info', '/camera/camera_info')
+                ('image_raw', 'image_raw')  # sem barra, fica /camera/image_raw
             ]
         )
     ])
-    
