@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+make_minimum_required(VERSION 3.13)
 
 project(apriltag_ros)
 
@@ -31,9 +31,7 @@ if(ASAN)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ASAN_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ASAN_FLAGS}")
 endif()
-find_package(Eigen3 REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(std_msgs REQUIRED)
+
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
